@@ -56,6 +56,11 @@ to fish ; fisher procedure
 end
 
 to recolor-patches
+  ask patches [
+    ; we want to colors to range from pure blue when the patch
+    ; is full of fish to white when there are no fish at all
+    set pcolor scale-color blue biomass (carrying-capacity * 2) 0
+  ]
 end
 
 to reset-parameters
@@ -833,7 +838,7 @@ false
 Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 @#$#@#$#@
-NetLogo 6.3.0
+NetLogo 6.4.0
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@

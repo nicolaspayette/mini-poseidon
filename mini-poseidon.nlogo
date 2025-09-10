@@ -40,19 +40,74 @@ to setup
 end
 
 to go
+  ask fishers [
+    set trip-costs trip-costs + hourly-costs
+    ifelse patch-here = current-destination [
+      ifelse any? ports-here [ dock ] [ fish ]
+    ] [
+      face current-destination
+      forward speed
+    ]
+  ]
+  update-biology
   tick
 end
 
 to update-biology
+  diffuse biomass diffusion-rate
+  recolor-patches
+  if ticks mod (15 * 24) = 0 [ ; every 15 days
+    ask patches [
+      set biomass biomass + (
+        growth-rate * biomass * (1 - (biomass / carrying-capacity))
+      )
+    ]
+  ]
 end
 
 to pick-destination ; fisher procedure
+  ifelse random-float 1 < exploration-probability [
+    ; explore:
+    let r 1 + random-poisson exploration-radius
+    set trip-destination [ one-of fishable-patches in-radius r ] of favourite-destination
+  ] [
+    let other-fisher one-of other fishers
+    let their-profits [ profits-at-favourite-destination ] of other-fisher
+    ifelse profits-at-favourite-destination >= their-profits [
+      ; exploit:
+      set trip-destination favourite-destination
+    ] [
+      ; imitate
+      set trip-destination [ favourite-destination ] of other-fisher
+    ]
+  ]
+  set current-destination trip-destination
 end
 
 to dock ; fisher procedure
+  let revenues biomass-in-hold * price-of-fish
+  set biomass-in-hold 0
+  let profits revenues - trip-costs
+  set trip-costs 0
+  set bank-balance bank-balance + profits
+  (ifelse
+    trip-destination = favourite-destination [
+      set profits-at-favourite-destination profits
+    ]
+    profits > profits-at-favourite-destination [
+      set favourite-destination trip-destination
+      set profits-at-favourite-destination profits
+    ]
+  )
+  pick-destination
 end
 
 to fish ; fisher procedure
+  set pcolor red
+  let biomass-caught biomass * catchability
+  set biomass biomass - biomass-caught
+  set biomass-in-hold biomass-in-hold + biomass-caught
+  set current-destination [ patch-here ] of one-of ports
 end
 
 to recolor-patches
